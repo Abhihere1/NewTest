@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 
 export interface ControlData {
   type: 'probable_options' | 'single_select' | 'structured_form'
@@ -16,6 +16,7 @@ interface Props {
   onSend: (message: string) => void
   disabled?: boolean
   readonly?: boolean
+  onPartialValuesChange?: (values: Record<string, string>[]) => void
 }
 
 function FormCard({
@@ -24,17 +25,19 @@ function FormCard({
   values,
   onChange,
   isComplete,
+  attempted,
 }: {
   index: number
   fields: { label: string; key: string; required: boolean }[]
   values: Record<string, string>
   onChange: (key: string, val: string) => void
   isComplete: boolean
+  attempted: boolean
 }) {
   return (
     <div
       data-testid={`form-card-${index}`}
-      className={`card p-4 rounded-xl mb-3 transition-all ${isComplete ? 'border-green-400' : 'border-gray-200'}`}
+      className={`card p-4 rounded-xl mb-3 transition-all`}
       style={{ borderWidth: isComplete ? 2 : 1, borderColor: isComplete ? '#4ADE80' : '#E5E7EB' }}
     >
       <div className="flex items-center justify-between mb-3">
@@ -48,40 +51,64 @@ function FormCard({
           </span>
         )}
       </div>
-      {fields.map(field => (
-        <div key={field.key} className="mb-2">
-          <label className="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">
-            {field.label}{field.required && <span className="text-red-500 ml-0.5">*</span>}
-          </label>
-          <input
-            data-testid={`form-field-${index}-${field.key}`}
-            type="text"
-            value={values[field.key] || ''}
-            onChange={e => onChange(field.key, e.target.value)}
-            className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-800 input-field transition-all"
-            placeholder={`Enter ${field.label.toLowerCase()}`}
-          />
-        </div>
-      ))}
+      {fields.map(field => {
+        const isEmpty = field.required && !values[field.key]?.trim()
+        const showError = attempted && isEmpty
+        return (
+          <div key={field.key} className="mb-2">
+            <label className="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">
+              {field.label}{field.required && <span className="text-red-500 ml-0.5">*</span>}
+            </label>
+            <input
+              data-testid={`form-field-${index}-${field.key}`}
+              type="text"
+              value={values[field.key] || ''}
+              onChange={e => onChange(field.key, e.target.value)}
+              className={`w-full border rounded-lg px-3 py-2 text-sm text-gray-800 input-field transition-all ${
+                showError ? 'border-red-400' : 'border-gray-200'
+              }`}
+              placeholder={`Enter ${field.label.toLowerCase()}`}
+            />
+            {showError && (
+              <p
+                data-testid={`form-field-error-${index}-${field.key}`}
+                className="text-xs text-red-500 mt-1"
+              >
+                {field.label} is required.
+              </p>
+            )}
+          </div>
+        )
+      })}
     </div>
   )
 }
 
-export default function DynamicControls({ controls, onSend, disabled = false, readonly = false }: Props) {
+export default function DynamicControls({ controls, onSend, disabled = false, readonly = false, onPartialValuesChange }: Props) {
   const [selected, setSelected] = useState<string | null>(null)
   const [formValues, setFormValues] = useState<Record<string, string>[]>(
     () => {
       const count = controls.total_cards || 1
       if (controls.partial_values && controls.partial_values.length > 0) {
-        return controls.partial_values
+        const base = controls.partial_values
+        if (base.length < count) {
+          return [...base, ...Array.from({ length: count - base.length }, () => ({}))]
+        }
+        return base
       }
       return Array.from({ length: count }, () => ({}))
     }
   )
   const [submitted, setSubmitted] = useState(false)
+  const [submitAttempted, setSubmitAttempted] = useState(false)
+
+  // Notify parent of partial value changes for persistence
+  useEffect(() => {
+    if (!onPartialValuesChange || controls.completed || submitted) return
+    onPartialValuesChange(formValues)
+  }, [formValues, onPartialValuesChange, controls.completed, submitted])
 
   if (controls.completed || submitted) {
-    // Show readonly state
     if (controls.type === 'probable_options' || controls.type === 'single_select') {
       return (
         <div data-testid="controls-completed" className="flex flex-wrap gap-2 mt-3">
@@ -169,7 +196,10 @@ export default function DynamicControls({ controls, onSend, disabled = false, re
     }
 
     const handleSubmit = () => {
-      if (!allComplete) return
+      if (!allComplete) {
+        setSubmitAttempted(true)
+        return
+      }
       const summary = formValues.map((vals, i) => {
         const parts = fields.map(f => `${f.label}: ${vals[f.key] || ''}`)
         return `Device ${i + 1}: ${parts.join(', ')}`
@@ -188,11 +218,12 @@ export default function DynamicControls({ controls, onSend, disabled = false, re
             values={formValues[i] || {}}
             onChange={(key, val) => handleFieldChange(i, key, val)}
             isComplete={isCardComplete(formValues[i] || {})}
+            attempted={submitAttempted}
           />
         ))}
         <button
           data-testid="structured-form-submit"
-          disabled={!allComplete || disabled || readonly}
+          disabled={disabled || readonly}
           onClick={handleSubmit}
           className="w-full px-4 py-2 rounded-lg text-sm font-semibold text-white bg-red-600 hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
