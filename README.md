@@ -32,7 +32,10 @@ MONGODB_URI=mongodb://localhost:27017/patch_db
 SESSION_SECRET=your-32-character-minimum-secret-key
 OLLAMA_BASE_URL=http://localhost:11434
 OLLAMA_MODEL=gemma4:31b-cloud
+OLLAMA_API_KEY=your-ollama-api-key-here
 ```
+
+> **Note:** `OLLAMA_API_KEY` is required. The application will fail to start with a clear configuration error if this variable is missing or empty.
 
 ### 3. Knowledge Base
 
