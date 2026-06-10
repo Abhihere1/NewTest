@@ -185,6 +185,23 @@ export default function MainPage() {
     }
   }, [incident, isTyping, chatEnded])
 
+  const partialValuesSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const incidentRef = useRef(incident)
+  useEffect(() => { incidentRef.current = incident }, [incident])
+
+  const handlePartialValuesChange = useCallback((values: Record<string, string>[]) => {
+    if (!incidentRef.current?.id) return
+    const id = incidentRef.current.id
+    if (partialValuesSaveTimer.current) clearTimeout(partialValuesSaveTimer.current)
+    partialValuesSaveTimer.current = setTimeout(() => {
+      fetch(`/api/incidents/${id}/partial-values`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ partial_values: values }),
+      }).catch(() => {})
+    }, 1000)
+  }, [])
+
   const handleInputKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
@@ -322,6 +339,11 @@ export default function MainPage() {
                             controls={msg.controls}
                             onSend={(text) => sendMessage(text)}
                             disabled={isTyping || chatEnded}
+                            onPartialValuesChange={
+                              msg.controls.type === 'structured_form' && !msg.controls.completed
+                                ? handlePartialValuesChange
+                                : undefined
+                            }
                           />
                         )}
 
