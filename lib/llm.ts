@@ -34,7 +34,6 @@ export async function callLLM(messages: ChatMessage[]): Promise<string> {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${apiKey}`,
     },
     body: JSON.stringify({
       model,
