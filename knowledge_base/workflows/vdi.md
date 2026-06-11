@@ -3,7 +3,6 @@
 # Knowledge Article: VDI - Basic Troubleshooting
 
 Are you processing a payment?
-(Possible options: "Yes", "I cannot answer", "I dont' know)
 
 If they answer Yes- we're going to open a ticket (proceed to opening a ticket as a Pri. 3,
 
