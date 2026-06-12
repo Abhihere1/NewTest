@@ -36,6 +36,7 @@ const CHAT_END_MSG = 'This conversation has ended.'
 export default function MainPage() {
   const [user, setUser] = useState<User | null>(null)
   const [vdiStatus, setVdiStatus] = useState<'available' | 'missing'>('missing')
+  const [scannerStatus, setScannerStatus] = useState<'available' | 'missing'>('missing')
   const [isChatActive, setIsChatActive] = useState(false)
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [isTyping, setIsTyping] = useState(false)
@@ -63,6 +64,7 @@ export default function MainPage() {
     }).catch(() => {})
     fetch('/api/kb').then(r => r.json()).then(d => {
       setVdiStatus(d.vdi || 'missing')
+      setScannerStatus(d.scanner || 'missing')
     }).catch(() => {})
     fetch('/api/incidents').then(r => r.json()).then(d => {
       setIncidentCount(d.incidents?.length || 0)
@@ -213,6 +215,10 @@ export default function MainPage() {
     sendMessage('I have a problem with my VDI', 'vdi')
   }
 
+  const handleScannerTile = () => {
+    sendMessage('I have a problem with my Scanner', 'scanner')
+  }
+
   const displayName = user?.username || user?.email?.split('@')[0] || ''
 
   return (
@@ -248,8 +254,8 @@ export default function MainPage() {
               </p>
             </div>
 
-            {/* VDI Tile */}
-            <div className="flex justify-center mb-10">
+            {/* Category Tiles */}
+            <div className="flex justify-center gap-6 mb-10 flex-wrap">
               <button
                 data-testid="vdi-tile"
                 onClick={handleVdiTile}
@@ -266,6 +272,25 @@ export default function MainPage() {
                   }`}
                 >
                   {vdiStatus === 'available' ? 'KB Available' : 'KB Missing'}
+                </span>
+              </button>
+
+              <button
+                data-testid="scanner-tile"
+                onClick={handleScannerTile}
+                className="scanner-tile card rounded-2xl px-10 py-8 flex flex-col items-center gap-3 w-52 cursor-pointer"
+              >
+                <div className="text-4xl">📷</div>
+                <p className="text-sm font-semibold text-gray-800">Scanner</p>
+                <span
+                  data-testid="scanner-kb-badge"
+                  className={`text-[10px] font-semibold uppercase tracking-wide px-2.5 py-1 rounded-full ${
+                    scannerStatus === 'available'
+                      ? 'bg-green-50 text-green-700 border border-green-200'
+                      : 'bg-gray-100 text-gray-400 border border-gray-200'
+                  }`}
+                >
+                  {scannerStatus === 'available' ? 'KB Available' : 'KB Missing'}
                 </span>
               </button>
             </div>

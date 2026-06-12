@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
-import { vdiKBStatus } from '@/lib/kb'
+import { vdiKBStatus, scannerKBStatus } from '@/lib/kb'
 
 export async function GET() {
-  return NextResponse.json({ vdi: vdiKBStatus() })
+  return NextResponse.json({ vdi: vdiKBStatus(), scanner: scannerKBStatus() })
 }
