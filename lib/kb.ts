@@ -54,3 +54,7 @@ export function buildKBContext(category: string | null): string {
 export function vdiKBStatus(): 'available' | 'missing' {
   return kbFileExists('vdi') ? 'available' : 'missing'
 }
+
+export function scannerKBStatus(): 'available' | 'missing' {
+  return kbFileExists('scanner') ? 'available' : 'missing'
+}
